@@ -177,7 +177,7 @@ public class TheStack : MonoBehaviour
 
             // Rubble(파편)을 생성하는 방향을 지정한다
             // 블록이 진행하는 방향에서 떨어져야할지? 진행하고 다가오는 방향에서 떨어져야할지?
-            //bool isNegativeNum = (deltaX < 0) ? true : false;
+            bool isNegativeNum = (deltaX < 0) ? true : false;
 
 
 
@@ -197,16 +197,16 @@ public class TheStack : MonoBehaviour
                 tempPosition.x = middle;
                 lastBlock.localPosition = lastPosition = tempPosition;  // 오른쪽부터 대입, lastBlock의 위치를 바꾸는 과정
 
-                //// x방향 파편 생성
-                //float rubbleHalfScale = deltaX / 2f;
-                //CreateRubble(
-                //    new Vector3(isNegativeNum
-                //    ? lastPosition.x + stackBounds.x / 2 + rubbleHalfScale
-                //    : lastPosition.x - stackBounds.x / 2 - rubbleHalfScale
-                //    , lastPosition.y
-                //    , lastPosition.z),
-                //    new Vector3(deltaX, 1, stackBounds.y)
-                //);
+                // x방향 파편 생성
+                float rubbleHalfScale = deltaX / 2f;
+                CreateRubble(
+                    new Vector3(isNegativeNum
+                    ? lastPosition.x + stackBounds.x / 2 + rubbleHalfScale  // 새로운 중심점: 잘린 부분의 중심과 잘려나간 부분의 중심의 평균
+                    : lastPosition.x - stackBounds.x / 2 - rubbleHalfScale  
+                    , lastPosition.y
+                    , lastPosition.z),
+                    new Vector3(deltaX, 1, stackBounds.y)
+                );
 
             }
             else
@@ -218,7 +218,8 @@ public class TheStack : MonoBehaviour
         {
             // z축 이동할 때 놓기
             float deltaZ = prevBlockPosition.z - lastPosition.z;    // top에 있는 블록(prevBlock)과 새로 쌓은 블록(last)의 중심 차이가 벗어난 정도이다
-
+            bool isNegativeNum = (deltaZ < 0) ? true : false;
+            
             deltaZ = Mathf.Abs(deltaZ); // 음수인 경우에 절대값
             if (deltaZ > ErrorMargin) // 오차범위 벗어나면
             {
@@ -234,6 +235,17 @@ public class TheStack : MonoBehaviour
                 Vector3 tempPosition = lastBlock.localPosition;
                 tempPosition.z = middle;
                 lastBlock.localPosition = lastPosition = tempPosition;  // 오른쪽부터 대입, lastBlock의 위치를 바꾸는 과정
+
+                float rubbleHalfScale = deltaZ / 2f;
+                CreateRubble(
+                    new Vector3(
+                        lastPosition.x
+                        , lastPosition.y
+                        , isNegativeNum
+                            ? lastPosition.z + stackBounds.y / 2 + rubbleHalfScale
+                            : lastPosition.z - stackBounds.y / 2 - rubbleHalfScale),
+                    new Vector3(stackBounds.x, 1, deltaZ)
+                );
             }
             else
             {
