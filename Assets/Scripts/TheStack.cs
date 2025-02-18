@@ -46,6 +46,8 @@ public class TheStack : MonoBehaviour
     private const string BestScoreKey = "BestScore";
     private const string BestComboKey = "BestCombo";
 
+    private bool isGameOver = false;    // 게임오버를 구분할 변수
+
 
     // Start is called before the first frame update
     void Start()
@@ -74,6 +76,8 @@ public class TheStack : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (isGameOver) return;
+
         if (Input.GetMouseButtonDown(0))
         {
             if (PlaceBlock())   // 블록이 잘 놓였다면
@@ -85,6 +89,8 @@ public class TheStack : MonoBehaviour
                 // 게임 오버
                 Debug.Log("Game Over");
                 UpdateScore();  // 현재 점수 저장
+                isGameOver = true;
+                GameOverEffect();
             }
         }
 
@@ -336,6 +342,33 @@ public class TheStack : MonoBehaviour
             // 저장
             PlayerPrefs.SetInt(BestScoreKey, bestScore);
             PlayerPrefs.SetInt(BestComboKey, bestCombo);
+        }
+    }
+
+    void GameOverEffect()
+    {
+        int childCount = this.transform.childCount; // this.transform의 하위에 있는 오브젝트 개수
+        // This는 TheStack이므로, 이 하위에 있는 블록들과 Rubble(파편)들의 개수
+
+        // 상위 20개에 effect 적용
+        for (int i = 1; i < 20; i++)
+        {
+            // childCount가 20개보다 큰 경우에 상위 20개를 가져올 수 있다
+            if (childCount < i) break;  // 아래의 childCount - i를 못하게 되어 인덱스에서 벗어난다
+
+            GameObject go =
+                this.transform.GetChild(childCount - i).gameObject;
+
+            // 파편인 경우에는 효과를 적용하지 않는다
+            if (go.name.Equals("Rubble")) continue;
+
+            Rigidbody rigid = go.AddComponent<Rigidbody>();
+
+            // 힘을 전달해서 위로 날려버린다
+            rigid.AddForce(
+                (Vector3.up * Random.Range(0, 10f) + Vector3.right * (Random.Range(0, 10f) - 5f))
+                * 100f
+            );
         }
     }
 }
