@@ -72,4 +72,16 @@ public class UIManager : MonoBehaviour
         Application.Quit(); // 어플리케이션 종료
 #endif
     }
+
+    public void UpdateScore()
+    {
+        gameUI.SetUI(theStack.Score, theStack.Combo, theStack.MaxCombo);
+    }
+    // score를 UI에 표시
+    public void SetScoreUI()
+    {
+        scoreUI.SetUI(theStack.Score, theStack.MaxCombo, theStack.BestScore, theStack.BestCombo);
+
+        ChangeState(UIState.Score);
+    }
 }

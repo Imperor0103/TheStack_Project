@@ -91,6 +91,7 @@ public class TheStack : MonoBehaviour
                 UpdateScore();  // 현재 점수 저장
                 isGameOver = true;
                 GameOverEffect();
+                UIManager.Instance.SetScoreUI();    // 점수 세팅
             }
         }
 
@@ -135,6 +136,7 @@ public class TheStack : MonoBehaviour
 
         isMovingX = !isMovingX; // block이 새로 생성되었다면 bool값을 반대로
 
+        UIManager.Instance.UpdateScore();   // 점수 업데이트
         return true;
     }
 
