@@ -46,7 +46,7 @@ public class TheStack : MonoBehaviour
     private const string BestScoreKey = "BestScore";
     private const string BestComboKey = "BestCombo";
 
-    private bool isGameOver = false;    // 게임오버를 구분할 변수
+    private bool isGameOver = true;    // 게임오버를 구분할 변수(처음에는 동작하지 않으므로 true)
 
 
     // Start is called before the first frame update
@@ -69,8 +69,8 @@ public class TheStack : MonoBehaviour
         // stackCount가 -1인 상태에서 시작하므로, 1개 쌓고 시작한다
         prevBlockPosition = Vector3.down;
 
-        Spawn_Block();  // 하나 생성
-        Spawn_Block();  // 하나 생성
+        Spawn_Block();  // 처음블록 생성
+        Spawn_Block();  // 이동블록 생성
     }
 
     // Update is called once per frame
@@ -371,4 +371,38 @@ public class TheStack : MonoBehaviour
             );
         }
     }
+    public void Restart()
+    {
+        // 재시작을 위해 모두 초기화
+
+        int childCount = transform.childCount;
+
+        for (int i = 0; i < childCount; i++)
+        {
+            Destroy(transform.GetChild(i).gameObject);
+        }
+
+        isGameOver = false;
+
+        lastBlock = null;
+        desiredPosition = Vector3.zero;
+        stackBounds = new Vector3(BoundSize, BoundSize);
+
+        stackCount = -1;
+        isMovingX = true;
+        blockTransition = 0f;
+        secondaryPosition = 0f;
+
+        comboCount = 0;
+        maxCombo = 0;
+
+        prevBlockPosition = Vector3.down;
+
+        prevColor = GetRandomColor();
+        nextColor = GetRandomColor();
+
+        Spawn_Block();  // 처음블록 생성
+        Spawn_Block();  // 이동블록 생성
+    }
+
 }
