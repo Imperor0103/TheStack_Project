@@ -27,6 +27,9 @@ public class TheStack : MonoBehaviour
     public Color prevColor;    // 이전 블록 색깔
     public Color nextColor;    // 새롭게 생성되는 블록의 색깔
 
+    bool isMovingX = true;  // x축 이동
+
+
 
     // Start is called before the first frame update
     void Start()
@@ -45,6 +48,7 @@ public class TheStack : MonoBehaviour
         prevBlockPosition = Vector3.down;
 
         Spawn_Block();  // 하나 생성
+        Spawn_Block();  // 하나 생성
     }
 
     // Update is called once per frame
@@ -52,8 +56,18 @@ public class TheStack : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            Spawn_Block();  // 하나 생성
+            if (PlaceBlock())   // 블록이 잘 놓였다면
+            {
+                Spawn_Block();  // 하나 생성
+            }
+            else
+            {
+                // 게임 오버
+                Debug.Log("Game Over");
+            }
         }
+
+        MoveBlock();
 
         // 블록이 쌓인 만큼 스택을 아래로 이동하는데, 끊어지지 않은 것처럼 부드럽게 이동
         transform.position = Vector3.Lerp(transform.position, desiredPosition, StackMovingSpeed * Time.deltaTime);
@@ -92,6 +106,8 @@ public class TheStack : MonoBehaviour
 
         lastBlock = newTrans;   // 새로 만든 것이 last블록
 
+        isMovingX = !isMovingX; // block이 새로 생성되었다면 bool값을 반대로
+
         return true;
     }
 
@@ -127,5 +143,129 @@ public class TheStack : MonoBehaviour
         }
     }
 
+    void MoveBlock()
+    {
+        blockTransition += Time.deltaTime * BlockMovingSpeed;
+
+        // Mathf.PingPong(blockTransition, BoundSize) 는 양수인 범위에서 진동하는 함수다
+        float movePosition = Mathf.PingPong(blockTransition, BoundSize) - BoundSize / 2;  // BoundSize의 절반만큼 빼야지 sin함수같이 -+ 진동한다
+        // movePosition은 블록의 사이즈다. 블록의 사이즈만큼 이동하기 위해서이다
+
+        if (isMovingX)
+        {
+            // x축 이동
+            lastBlock.localPosition = new Vector3(
+                movePosition * MovingBoundSize, stackCount, secondaryPosition); // y가 stackCount인 이유는, 높이는 변하지 않기 때문
+        }
+        else
+        {
+            // z축 이동
+            lastBlock.localPosition = new Vector3(
+                secondaryPosition, stackCount, movePosition * MovingBoundSize);
+        }
+    }
+
+    bool PlaceBlock()
+    {
+        Vector3 lastPosition = lastBlock.localPosition;
+        if (isMovingX)
+        {
+            // x축 이동할 때 놓기
+            // deltaX: 잘려나가야 하는 크기
+            float deltaX = prevBlockPosition.x - lastPosition.x;
+            // top에 있는 블록(prevBlock)과 새로 쌓은 블록(last)의 중심 차이가 벗어난 정도이다
+
+            // Rubble(파편)을 생성하는 방향을 지정한다
+            // 블록이 진행하는 방향에서 떨어져야할지? 진행하고 다가오는 방향에서 떨어져야할지?
+            //bool isNegativeNum = (deltaX < 0) ? true : false;
+
+
+
+            deltaX = Mathf.Abs(deltaX); // 음수인 경우에 절대값
+            if (deltaX > ErrorMargin) // 오차범위 벗어나면
+            {
+                stackBounds.x -= deltaX;    // 다음에 생성할 블록의 사이즈가 줄어든다
+                if (stackBounds.x <= 0)
+                {
+                    return false;
+                }
+                // 다음에 블록을 생성할 수 있는 경우 중심은 두 블록의 중심의 중점
+                float middle = (prevBlockPosition.x + lastPosition.x) / 2;
+                lastBlock.localScale = new Vector3(stackBounds.x, 1, stackBounds.y); // 크기
+
+                Vector3 tempPosition = lastBlock.localPosition;
+                tempPosition.x = middle;
+                lastBlock.localPosition = lastPosition = tempPosition;  // 오른쪽부터 대입, lastBlock의 위치를 바꾸는 과정
+
+                //// x방향 파편 생성
+                //float rubbleHalfScale = deltaX / 2f;
+                //CreateRubble(
+                //    new Vector3(isNegativeNum
+                //    ? lastPosition.x + stackBounds.x / 2 + rubbleHalfScale
+                //    : lastPosition.x - stackBounds.x / 2 - rubbleHalfScale
+                //    , lastPosition.y
+                //    , lastPosition.z),
+                //    new Vector3(deltaX, 1, stackBounds.y)
+                //);
+
+            }
+            else
+            {
+                lastBlock.localPosition = prevBlockPosition + Vector3.up;
+            }
+        }
+        else
+        {
+            // z축 이동할 때 놓기
+            float deltaZ = prevBlockPosition.z - lastPosition.z;    // top에 있는 블록(prevBlock)과 새로 쌓은 블록(last)의 중심 차이가 벗어난 정도이다
+
+            deltaZ = Mathf.Abs(deltaZ); // 음수인 경우에 절대값
+            if (deltaZ > ErrorMargin) // 오차범위 벗어나면
+            {
+                stackBounds.y -= deltaZ;    // 다음에 생성할 블록의 사이즈가 줄어든다
+                if (stackBounds.y <= 0)
+                {
+                    return false;
+                }
+                // 다음에 블록을 생성할 수 있는 경우 중심은 두 블록의 중심의 중점
+                float middle = (prevBlockPosition.z + lastPosition.z) / 2f;
+                lastBlock.localScale = new Vector3(stackBounds.x, 1, stackBounds.y);    // 크기
+
+                Vector3 tempPosition = lastBlock.localPosition;
+                tempPosition.z = middle;
+                lastBlock.localPosition = lastPosition = tempPosition;  // 오른쪽부터 대입, lastBlock의 위치를 바꾸는 과정
+            }
+            else
+            {
+                lastBlock.localPosition = prevBlockPosition + Vector3.up;
+            }
+        }
+
+        secondaryPosition = (isMovingX) ? lastBlock.localPosition.x : lastBlock.localPosition.z;
+        // 사용 이유
+        // secondaryPosition을 MoveBlock에서 사용하고 있다
+        // 이전 블록의 위치가 계속 바뀌기 때문에, 중심인 0의 위치를 계속 사용할 수 없다
+        // 이동시킨 블록이 x축 이동인 경우 x값, z축 이동인 경우 z값을 저장했다가
+        // MoveBlock에서 사용하고 있는 것이다
+
+        return true;
+    }
+
+    // 파편(잘려나간 블록) 만든다
+    void CreateRubble(Vector3 pos, Vector3 scale)
+    {
+        GameObject go = Instantiate(lastBlock.gameObject);
+        go.transform.parent = this.transform;   // 부모는 TheStack
+
+        // 초기화
+        go.transform.localPosition = pos;
+        go.transform.localScale = scale;
+        go.transform.localRotation = Quaternion.identity;    // 회전은 없다
+
+        // 파편은 바닥에 딸어져야한다
+        go.AddComponent<Rigidbody>();
+        go.name = "Rubble";
+
+    }
 
 }
