@@ -22,13 +22,29 @@ public class TheStack : MonoBehaviour
     float secondaryPosition = 0f;
 
     int stackCount = -1;    // 스택에 쌓인 개수, 시작하면서 +1 하며 사용할 것이므로 -1로 초기화
+    public int Score { get { return stackCount; } }
+
     int comboCount = 0;
+    public int Combo { get { return comboCount; } }
+
+    private int maxCombo = 0;
+    public int MaxCombo { get => maxCombo; }    // lambda로 작성
+
 
     public Color prevColor;    // 이전 블록 색깔
     public Color nextColor;    // 새롭게 생성되는 블록의 색깔
 
     bool isMovingX = true;  // x축 이동
 
+    int bestScore = 0;
+    public int BestScore { get => bestScore; }
+
+    int bestCombo = 0;
+    public int BestCombo { get => bestCombo; }
+
+    // PlayerPrefs를 사용할 때 필요한 key값
+    private const string BestScoreKey = "BestScore";
+    private const string BestComboKey = "BestCombo";
 
 
     // Start is called before the first frame update
@@ -39,6 +55,10 @@ public class TheStack : MonoBehaviour
             Debug.Log("OriginBlock is NULL");
             return;
         }
+
+        /// PlayerPrefs에 저장된 정보가 있다면 불러온다
+        bestScore = PlayerPrefs.GetInt(BestScoreKey, 0);
+        bestCombo = PlayerPrefs.GetInt(BestComboKey, 0);
 
         // 처음에는 랜덤하게 색깔 정한다
         prevColor = GetRandomColor();
@@ -64,6 +84,7 @@ public class TheStack : MonoBehaviour
             {
                 // 게임 오버
                 Debug.Log("Game Over");
+                UpdateScore();  // 현재 점수 저장
             }
         }
 
@@ -202,15 +223,17 @@ public class TheStack : MonoBehaviour
                 CreateRubble(
                     new Vector3(isNegativeNum
                     ? lastPosition.x + stackBounds.x / 2 + rubbleHalfScale  // 새로운 중심점: 잘린 부분의 중심과 잘려나간 부분의 중심의 평균
-                    : lastPosition.x - stackBounds.x / 2 - rubbleHalfScale  
+                    : lastPosition.x - stackBounds.x / 2 - rubbleHalfScale
                     , lastPosition.y
                     , lastPosition.z),
                     new Vector3(deltaX, 1, stackBounds.y)
                 );
 
+                comboCount = 0; // 콤보 초기화
             }
             else
             {
+                ComboCheck();   // 콤보 추가
                 lastBlock.localPosition = prevBlockPosition + Vector3.up;
             }
         }
@@ -219,7 +242,7 @@ public class TheStack : MonoBehaviour
             // z축 이동할 때 놓기
             float deltaZ = prevBlockPosition.z - lastPosition.z;    // top에 있는 블록(prevBlock)과 새로 쌓은 블록(last)의 중심 차이가 벗어난 정도이다
             bool isNegativeNum = (deltaZ < 0) ? true : false;
-            
+
             deltaZ = Mathf.Abs(deltaZ); // 음수인 경우에 절대값
             if (deltaZ > ErrorMargin) // 오차범위 벗어나면
             {
@@ -246,9 +269,12 @@ public class TheStack : MonoBehaviour
                             : lastPosition.z - stackBounds.y / 2 - rubbleHalfScale),
                     new Vector3(stackBounds.x, 1, deltaZ)
                 );
+
+                comboCount = 0;
             }
             else
             {
+                ComboCheck();
                 lastBlock.localPosition = prevBlockPosition + Vector3.up;
             }
         }
@@ -280,4 +306,36 @@ public class TheStack : MonoBehaviour
 
     }
 
+    void ComboCheck()
+    {
+        comboCount++;
+
+        if (comboCount > maxCombo)
+            maxCombo = comboCount;
+
+        if ((comboCount % 5) == 0)
+        {
+            Debug.Log("5Combo Success!");
+            stackBounds += new Vector3(0.5f, 0.5f);
+            // 5콤보 달성하면 size를 조금씩 늘린다! (원래길이를 초과하지는 않음)
+            stackBounds.x =
+                (stackBounds.x > BoundSize) ? BoundSize : stackBounds.x;
+            stackBounds.y =
+                (stackBounds.y > BoundSize) ? BoundSize : stackBounds.y;
+        }
+    }
+
+    void UpdateScore()
+    {
+        if (bestScore < stackCount)
+        {
+            Debug.Log("최고 점수 갱신");
+            bestScore = stackCount;
+            bestCombo = maxCombo;
+
+            // 저장
+            PlayerPrefs.SetInt(BestScoreKey, bestScore);
+            PlayerPrefs.SetInt(BestComboKey, bestCombo);
+        }
+    }
 }
